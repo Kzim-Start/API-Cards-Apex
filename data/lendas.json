@@ -1,0 +1,134 @@
+[
+  {
+    "id": 1,
+    "nome": "Ash",
+    "titulo": "A Incisiva Instigadora",
+    "classe": "Combate",
+    "descricao": "Uma guerreira simulacro que inicia confrontos e reposiciona a equipe em segundos.",
+    "tatica": "Armadilha Voltaica",
+    "suprema": "Ruptura Dimensional",
+    "cor": "#e56f70",
+    "favorita": true
+  },
+  {
+    "id": 2,
+    "nome": "Crypto",
+    "titulo": "Especialista em Vigilância",
+    "classe": "Batedor",
+    "descricao": "Usa tecnologia e drones para revelar ameaças e dar informação ao esquadrão.",
+    "tatica": "Drone de Vigilância",
+    "suprema": "PEM do Drone",
+    "cor": "#65d3b0",
+    "favorita": true
+  },
+  {
+    "id": 3,
+    "nome": "Lifeline",
+    "titulo": "Médica de Combate",
+    "classe": "Suporte",
+    "descricao": "Mantém o time em pé, auxilia na recuperação e transforma derrotas em novas chances.",
+    "tatica": "Drone de Cura D.O.C.",
+    "suprema": "D.O.C. Halo",
+    "cor": "#84d6d1",
+    "favorita": true
+  },
+  {
+    "id": 4,
+    "nome": "Bangalore",
+    "titulo": "Soldado Profissional",
+    "classe": "Assalto",
+    "descricao": "Especialista em combate, usa fumaça e artilharia para abrir espaço no campo de batalha.",
+    "tatica": "Lançador de Fumaça",
+    "suprema": "Estrondo do Trovão",
+    "cor": "#edaa71",
+    "favorita": false
+  },
+  {
+    "id": 5,
+    "nome": "Bloodhound",
+    "titulo": "Rastreadore Tecnológique",
+    "classe": "Batedor",
+    "descricao": "Rastreia movimentos e identifica perigos para antecipar as decisões dos inimigos.",
+    "tatica": "Olho do Pai de Todos",
+    "suprema": "Fera da Caça",
+    "cor": "#d8b583",
+    "favorita": false
+  },
+  {
+    "id": 6,
+    "nome": "Wraith",
+    "titulo": "Combatente Interdimensional",
+    "classe": "Combate",
+    "descricao": "Explora o vazio para esquivar de situações perigosas e criar caminhos de fuga.",
+    "tatica": "Adentrando o Vazio",
+    "suprema": "Fenda Dimensional",
+    "cor": "#b9a5e8",
+    "favorita": false
+  },
+  {
+    "id": 7,
+    "nome": "Octane",
+    "titulo": "Acrobata de Alta Velocidade",
+    "classe": "Combate",
+    "descricao": "Movimentação extrema e entradas rápidas para quem gosta de jogar agressivamente.",
+    "tatica": "Estimulante",
+    "suprema": "Plataforma de Lançamento",
+    "cor": "#b6df71",
+    "favorita": false
+  },
+  {
+    "id": 8,
+    "nome": "Catalyst",
+    "titulo": "Conjuradora Defensiva",
+    "classe": "Controle",
+    "descricao": "Manipula ferrofluido para bloquear entradas e controlar as posições dos adversários.",
+    "tatica": "Espinhos Perfurantes",
+    "suprema": "Véu Negro",
+    "cor": "#b78fe5",
+    "favorita": false
+  },
+  {
+    "id": 9,
+    "nome": "Fuse",
+    "titulo": "Entusiasta dos Explosivos",
+    "classe": "Assalto",
+    "descricao": "Provoca pressão à distância com explosivos e impede que adversários fiquem parados.",
+    "tatica": "Bomba de Fragmentação",
+    "suprema": "Megabomba",
+    "cor": "#f19e65",
+    "favorita": false
+  },
+  {
+    "id": 10,
+    "nome": "Conduit",
+    "titulo": "Salvadora dos Escudos",
+    "classe": "Suporte",
+    "descricao": "Fortalece os escudos dos aliados e cria oportunidades para o time sobreviver.",
+    "tatica": "Transferência Radiante",
+    "suprema": "Barricada de Energia",
+    "cor": "#e7be67",
+    "favorita": false
+  },
+  {
+    "id": 11,
+    "nome": "Caustic",
+    "titulo": "Caçador Tóxico",
+    "classe": "Controle",
+    "descricao": "Domina edifícios e corredores usando armadilhas de gás para negar espaço.",
+    "tatica": "Armadilha de Gás Nox",
+    "suprema": "Granada de Gás Nox",
+    "cor": "#a5bd75",
+    "favorita": false
+  },
+  {
+    "id": 12,
+    "nome": "Loba",
+    "titulo": "Ladra Translocadora",
+    "classe": "Suporte",
+    "descricao": "Consegue alcançar itens importantes e abastecer o esquadrão com equipamentos.",
+    "tatica": "Melhor Amiga da Ladra",
+    "suprema": "Butique do Mercado Negro",
+    "cor": "#e89a97",
+    "favorita": false
+  }
+]
