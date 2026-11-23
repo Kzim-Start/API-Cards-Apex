@@ -1,188 +1,151 @@
-// Front-end: busca os dados da API Express com fetch() e atualiza a página.
+// O navegador usa fetch() para conversar com a API do Express.
 const API = '/api/lendas';
-
 const grid = document.querySelector('#gridLendas');
-const busca = document.querySelector('#busca');
-const modal = document.querySelector('#modalLenda');
-const formulario = document.querySelector('#formLenda');
-const toast = document.querySelector('#toast');
-
-let classeSelecionada = 'Todas';
-let somenteFavoritas = false;
+const form = document.querySelector('#formLenda');
+const areaFormulario = document.querySelector('#areaFormulario');
+const aviso = document.querySelector('#mensagem');
 let idEmEdicao = null;
+let numeroConsulta = 0;
 let tempoBusca;
-let tempoToast;
-let ultimaConsulta = 0;
 
-const simbolos = { Assalto: '✦', Combate: '⟡', Batedor: '◎', Controle: '▣', Suporte: '✚' };
-
-// Evita que textos cadastrados sejam interpretados como HTML.
-function textoSeguro(valor) {
-  return String(valor).replace(/[&<>"']/g, (letra) => ({
+function textoSeguro(texto) {
+  return String(texto ?? '').replace(/[&<>"']/g, (caractere) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  }[letra]));
+  }[caractere]));
 }
 
-async function requisicao(url, opcoes = {}) {
-  const resposta = await fetch(url, opcoes);
-
+async function pedir(url, opcoes = {}) {
+  let resposta;
+  try {
+    resposta = await fetch(url, opcoes);
+  } catch {
+    throw new Error('Não foi possível conectar ao servidor. Execute npm start.');
+  }
   if (!resposta.ok) {
     const dados = await resposta.json().catch(() => ({}));
-    throw new Error(dados.erro || 'Não foi possível concluir a requisição.');
+    throw new Error(dados.erro || `Erro ${resposta.status} ao acessar a API.`);
   }
-
-  if (resposta.status === 204) return null;
-  return resposta.json();
+  return resposta.status === 204 ? null : resposta.json();
 }
 
-function notificar(mensagem, erro = false) {
-  clearTimeout(tempoToast);
-  toast.textContent = mensagem;
-  toast.classList.toggle('error', erro);
-  toast.classList.add('visible');
-  tempoToast = setTimeout(() => toast.classList.remove('visible'), 3500);
+function mostrarAviso(texto, falha = false) {
+  aviso.textContent = texto;
+  aviso.classList.toggle('falha', falha);
+  aviso.hidden = false;
 }
 
-function atualizarResumo(lendas) {
-  const totais = { Assalto: 0, Combate: 0, Batedor: 0, Controle: 0, Suporte: 0 };
-  lendas.forEach((lenda) => { if (lenda.classe in totais) totais[lenda.classe]++; });
-
-  document.querySelector('#totalLendas').textContent = String(lendas.length).padStart(2, '0');
-  Object.entries(totais).forEach(([classe, quantidade]) => {
-    document.querySelector(`#total${classe}`).textContent = String(quantidade).padStart(2, '0');
-  });
-}
-
-function desenharCards(lendas) {
-  document.querySelector('#contadorResultados').textContent = `${String(lendas.length).padStart(2, '0')} REGISTRO(S) ENCONTRADO(S)`;
+function desenharLendas(lendas) {
+  document.querySelector('#contadorResultados').textContent =
+    `${lendas.length} ${lendas.length === 1 ? 'lenda encontrada' : 'lendas encontradas'}`;
 
   if (!lendas.length) {
-    grid.innerHTML = `<div class="empty-state"><span>◇</span><h3>NENHUMA LENDA ENCONTRADA.</h3><p>Experimente outra busca ou adicione um novo personagem.</p></div>`;
+    grid.innerHTML = '<p class="vazio">Nenhuma lenda encontrada. Tente outra busca.</p>';
     return;
   }
 
-  grid.innerHTML = lendas.map((lenda, indice) => {
-    const sigla = lenda.nome.split(/\s+/).map((parte) => parte.charAt(0)).join('').slice(0, 2).toUpperCase();
-    const simbolo = simbolos[lenda.classe] || '✦';
-
+  grid.innerHTML = lendas.map((lenda) => {
+    // A cor vem do cadastro, mas só aceitamos cores hexadecimais.
+    const cor = /^#[0-9a-f]{6}$/i.test(lenda.cor) ? lenda.cor : '#df454b';
     return `
-      <article class="legend-card" style="--accent:${textoSeguro(lenda.cor)}; --delay:${Math.min(indice * 45, 360)}ms">
-        <div class="card-art">
-          <div class="art-top"><span>APX // ${String(lenda.id).padStart(3, '0')}</span><span>◈ CLASSIFIED</span></div>
-          <div class="art-rings"></div><div class="art-cut"></div>
-          <span class="art-symbol" aria-hidden="true">${simbolo}</span>
-          <span class="art-monogram" aria-hidden="true">${textoSeguro(sigla)}</span>
-          <div class="art-bottom"><span>${textoSeguro(lenda.classe.toUpperCase())}</span><span>///</span></div>
+      <article class="card" style="--cor: ${cor}">
+        <div class="card-conteudo">
+          <div class="card-topo">
+            <div><span class="classe">${textoSeguro(lenda.classe)}</span>
+              <h3>${textoSeguro(lenda.nome)}</h3></div>
+            <button type="button" class="favorito ${lenda.favorita ? 'marcado' : ''}"
+              data-acao="favoritar" data-id="${lenda.id}"
+              aria-label="${lenda.favorita ? 'Remover favorita' : 'Marcar favorita'}: ${textoSeguro(lenda.nome)}">${lenda.favorita ? '★' : '☆'}</button>
+          </div>
+          <p class="titulo">${textoSeguro(lenda.titulo)}</p>
+          <p class="descricao">${textoSeguro(lenda.descricao)}</p>
+          <div class="habilidades">
+            <p><strong>Tática:</strong> ${textoSeguro(lenda.tatica)}</p>
+            <p><strong>Suprema:</strong> ${textoSeguro(lenda.suprema)}</p>
+          </div>
         </div>
-        <div class="card-content">
-          <div class="card-kicker"><span class="class-dot"></span>${textoSeguro(lenda.classe.toUpperCase())}<span class="card-actions">
-            <button type="button" data-acao="favoritar" data-id="${lenda.id}" class="icon-button favorite-button ${lenda.favorita ? 'is-favorite' : ''}" aria-label="${lenda.favorita ? 'Desfavoritar' : 'Favoritar'} ${textoSeguro(lenda.nome)}" title="Favoritar">${lenda.favorita ? '★' : '☆'}</button>
-          </span></div>
-          <h3>${textoSeguro(lenda.nome.toUpperCase())}</h3>
-          <p class="legend-title">${textoSeguro(lenda.titulo)}</p>
-          <p class="legend-description">${textoSeguro(lenda.descricao)}</p>
-          <div class="abilities"><div><small>TÁTICA</small><span>${textoSeguro(lenda.tatica)}</span></div><div><small>SUPREMA</small><span>${textoSeguro(lenda.suprema)}</span></div></div>
-          <div class="card-footer"><button type="button" data-acao="editar" data-id="${lenda.id}">✎ EDITAR</button><button type="button" data-acao="excluir" data-id="${lenda.id}">✕ EXCLUIR</button></div>
+        <div class="acoes">
+          <button type="button" class="botao secundario" data-acao="editar" data-id="${lenda.id}">Editar</button>
+          <button type="button" class="botao perigo" data-acao="excluir" data-id="${lenda.id}">Excluir</button>
         </div>
       </article>`;
   }).join('');
 }
 
 async function carregarLendas() {
-  const consultaAtual = ++ultimaConsulta;
+  const minhaConsulta = ++numeroConsulta;
   const parametros = new URLSearchParams();
-  if (busca.value.trim()) parametros.set('busca', busca.value.trim());
-  if (classeSelecionada !== 'Todas') parametros.set('classe', classeSelecionada);
-  if (somenteFavoritas) parametros.set('favoritas', 'true');
+  const busca = document.querySelector('#busca').value.trim();
+  const classe = document.querySelector('#filtroClasse').value;
+  if (busca) parametros.set('busca', busca);
+  if (classe) parametros.set('classe', classe);
+  if (document.querySelector('#soFavoritas').checked) parametros.set('favoritas', 'true');
 
   try {
-    // A lista mostrada na tela vem da API, inclusive os filtros e a busca.
-    const [filtradas, todas] = await Promise.all([
-      requisicao(`${API}?${parametros.toString()}`),
-      requisicao(API)
-    ]);
-    if (consultaAtual !== ultimaConsulta) return;
-
-    desenharCards(filtradas);
-    atualizarResumo(todas);
-    document.querySelector('#apiStatus').textContent = 'API ONLINE';
-    document.querySelector('.header-right').classList.add('connected');
+    const lendas = await pedir(`${API}?${parametros}`);
+    if (minhaConsulta !== numeroConsulta) return;
+    desenharLendas(lendas);
+    const status = document.querySelector('#apiStatus');
+    status.textContent = 'API conectada';
+    status.className = 'status online';
   } catch (erro) {
-    if (consultaAtual !== ultimaConsulta) return;
-    grid.innerHTML = `<div class="empty-state"><span>!</span><h3>SEM CONEXÃO COM A API</h3><p>Verifique se você iniciou o servidor com npm start.</p></div>`;
-    document.querySelector('#apiStatus').textContent = 'API OFFLINE';
-    document.querySelector('.header-right').classList.remove('connected');
-    notificar(erro.message, true);
+    if (minhaConsulta !== numeroConsulta) return;
+    grid.innerHTML = '<p class="vazio">Não foi possível carregar as lendas.</p>';
+    const status = document.querySelector('#apiStatus');
+    status.textContent = 'API desconectada';
+    status.className = 'status offline';
+    mostrarAviso(erro.message, true);
   }
 }
 
-function abrirModal(lenda = null) {
-  formulario.reset();
+function abrirFormulario(lenda = null) {
+  form.reset();
   document.querySelector('#erroFormulario').textContent = '';
   idEmEdicao = lenda ? lenda.id : null;
-  document.querySelector('#tituloModal').textContent = lenda ? 'EDITAR LENDA' : 'NOVA LENDA';
-  document.querySelector('#salvarLenda').textContent = lenda ? 'SALVAR ALTERAÇÕES ↗' : 'CADASTRAR LENDA ↗';
+  document.querySelector('#tituloFormulario').textContent = lenda ? 'Editar lenda' : 'Cadastrar lenda';
+  document.querySelector('#salvarLenda').textContent = lenda ? 'Salvar alterações' : 'Cadastrar';
 
   if (lenda) {
-    for (const campo of ['nome', 'titulo', 'classe', 'descricao', 'tatica', 'suprema', 'cor']) {
-      formulario.elements[campo].value = lenda[campo];
+    for (const campo of ['nome', 'titulo', 'classe', 'tatica', 'suprema', 'descricao', 'cor']) {
+      form.elements.namedItem(campo).value = lenda[campo] ?? '';
     }
   }
-  modal.showModal();
+  areaFormulario.hidden = false;
+  areaFormulario.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-async function editarLenda(id) {
-  try {
-    const lenda = await requisicao(`${API}/${id}`);
-    abrirModal(lenda);
-  } catch (erro) {
-    notificar(erro.message, true);
-  }
+function fecharFormulario() {
+  areaFormulario.hidden = true;
+  idEmEdicao = null;
+  form.reset();
 }
 
-async function excluirLenda(id) {
-  if (!window.confirm('Deseja mesmo excluir esta lenda?')) return;
-
-  try {
-    await requisicao(`${API}/${id}`, { method: 'DELETE' });
-    notificar('Lenda excluída com sucesso.');
-    await carregarLendas();
-  } catch (erro) {
-    notificar(erro.message, true);
-  }
+function limparFiltros() {
+  document.querySelector('#busca').value = '';
+  document.querySelector('#filtroClasse').value = '';
+  document.querySelector('#soFavoritas').checked = false;
 }
 
-async function favoritarLenda(id) {
-  try {
-    await requisicao(`${API}/${id}/favorita`, { method: 'PATCH' });
-    await carregarLendas();
-  } catch (erro) {
-    notificar(erro.message, true);
-  }
-}
-
-// Criação ou edição: os dados do formulário são enviados como JSON.
-formulario.addEventListener('submit', async (evento) => {
+form.addEventListener('submit', async (evento) => {
   evento.preventDefault();
+  if (!form.reportValidity()) return;
 
-  const dados = Object.fromEntries(new FormData(formulario).entries());
   const botao = document.querySelector('#salvarLenda');
+  const editando = idEmEdicao !== null;
+  const dados = Object.fromEntries(new FormData(form).entries());
   botao.disabled = true;
   document.querySelector('#erroFormulario').textContent = '';
 
   try {
-    const url = idEmEdicao ? `${API}/${idEmEdicao}` : API;
-    const metodo = idEmEdicao ? 'PUT' : 'POST';
-
-    await requisicao(url, {
-      method: metodo,
+    await pedir(editando ? `${API}/${idEmEdicao}` : API, {
+      method: editando ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(dados)
     });
-
-    modal.close();
-    notificar(idEmEdicao ? 'Lenda atualizada com sucesso.' : 'Nova lenda cadastrada.');
+    fecharFormulario();
+    limparFiltros(); // A lenda criada não fica escondida por um filtro antigo.
     await carregarLendas();
+    mostrarAviso(editando ? 'Lenda atualizada!' : 'Lenda cadastrada com sucesso!');
+    document.querySelector('#lendas').scrollIntoView({ behavior: 'smooth' });
   } catch (erro) {
     document.querySelector('#erroFormulario').textContent = erro.message;
   } finally {
@@ -190,50 +153,38 @@ formulario.addEventListener('submit', async (evento) => {
   }
 });
 
-document.querySelector('#abrirCadastro').addEventListener('click', () => abrirModal());
-document.querySelector('#heroNovaLenda').addEventListener('click', () => abrirModal());
-document.querySelector('#fecharModal').addEventListener('click', () => modal.close());
-document.querySelector('#cancelarModal').addEventListener('click', () => modal.close());
-
-document.querySelector('#filtrosClasse').addEventListener('click', (evento) => {
-  const botao = evento.target.closest('[data-classe]');
-  if (!botao) return;
-
-  classeSelecionada = botao.dataset.classe;
-  document.querySelectorAll('[data-classe]').forEach((item) => {
-    const selecionado = item === botao;
-    item.classList.toggle('selected', selecionado);
-    item.setAttribute('aria-pressed', String(selecionado));
-  });
-  carregarLendas();
-});
-
-document.querySelector('#filtroFavoritas').addEventListener('click', (evento) => {
-  somenteFavoritas = !somenteFavoritas;
-  evento.currentTarget.classList.toggle('selected', somenteFavoritas);
-  evento.currentTarget.setAttribute('aria-pressed', String(somenteFavoritas));
-  carregarLendas();
-});
-
-busca.addEventListener('input', () => {
+document.querySelector('#abrirCadastro').addEventListener('click', () => abrirFormulario());
+document.querySelector('#cancelarCadastro').addEventListener('click', fecharFormulario);
+document.querySelector('#filtroClasse').addEventListener('change', carregarLendas);
+document.querySelector('#soFavoritas').addEventListener('change', carregarLendas);
+document.querySelector('#busca').addEventListener('input', () => {
   clearTimeout(tempoBusca);
-  tempoBusca = setTimeout(carregarLendas, 220);
+  tempoBusca = setTimeout(carregarLendas, 250);
 });
 
-grid.addEventListener('click', (evento) => {
-  const botao = evento.target.closest('[data-acao]');
+grid.addEventListener('click', async (evento) => {
+  const botao = evento.target.closest('button[data-acao]');
   if (!botao) return;
   const id = Number(botao.dataset.id);
-  if (botao.dataset.acao === 'editar') editarLenda(id);
-  if (botao.dataset.acao === 'excluir') excluirLenda(id);
-  if (botao.dataset.acao === 'favoritar') favoritarLenda(id);
-});
+  botao.disabled = true;
 
-// A tecla / ativa rapidamente o campo de pesquisa.
-document.addEventListener('keydown', (evento) => {
-  if (evento.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
-    evento.preventDefault();
-    busca.focus();
+  try {
+    if (botao.dataset.acao === 'editar') {
+      const lenda = await pedir(`${API}/${id}`);
+      abrirFormulario(lenda);
+    } else if (botao.dataset.acao === 'excluir') {
+      if (!confirm('Deseja excluir esta lenda?')) return;
+      await pedir(`${API}/${id}`, { method: 'DELETE' });
+      mostrarAviso('Lenda excluída.');
+      await carregarLendas();
+    } else if (botao.dataset.acao === 'favoritar') {
+      await pedir(`${API}/${id}/favorita`, { method: 'PATCH' });
+      await carregarLendas();
+    }
+  } catch (erro) {
+    mostrarAviso(erro.message, true);
+  } finally {
+    botao.disabled = false;
   }
 });
 

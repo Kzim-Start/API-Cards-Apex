@@ -3,131 +3,98 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#111319">
-  <meta name="description" content="Projeto de Programação Web: catálogo de lendas de Apex Legends com API REST Express.">
-  <title>LEGEND ARCHIVE | Apex Legends</title>
+  <title>Catálogo de Lendas - Apex Legends</title>
   <link rel="stylesheet" href="/styles.css">
   <script src="/app.js" defer></script>
 </head>
 <body>
-  <div class="noise" aria-hidden="true"></div>
-
-  <header class="site-header">
-    <a class="brand" href="#inicio" aria-label="Início - Legend Archive">
-      <span class="brand-symbol" aria-hidden="true"><span></span></span>
-      <span class="brand-type"><strong>LEGEND<span>ARCHIVE</span></strong><small>APEX // FAN PROJECT</small></span>
-    </a>
-    <nav aria-label="Menu principal">
-      <a class="nav-link active" href="#lendas">LENDAS</a>
-      <a class="nav-link" href="#projeto">O PROJETO</a>
-    </nav>
-    <div class="header-right"><span class="online-pulse"></span> <span id="apiStatus">CONECTANDO À API</span></div>
+  <header class="topo">
+    <div class="container barra">
+      <a class="marca" href="#inicio">APEX <span>LEGENDS</span></a>
+      <span id="apiStatus" class="status">Conectando...</span>
+    </div>
   </header>
 
-  <main>
-    <section id="inicio" class="hero section-shell">
-      <div class="hero-content">
-        <div class="eyebrow"><span class="eyebrow-line"></span> PROGRAMAÇÃO WEB / PROJETO FINAL</div>
-        <p class="hero-index">01 <span>/</span> A LENDA COMEÇA AQUI</p>
-        <h1>ESCOLHA<br>SUA <em>LENDA.</em></h1>
-        <p class="hero-description">Um arquivo de personagens inspirado em Apex Legends. Explore as classes, descubra habilidades e gerencie seu próprio catálogo.</p>
-        <div class="hero-actions">
-          <a href="#lendas" class="button button-primary">EXPLORAR LENDAS <span aria-hidden="true">↗</span></a>
-          <button id="heroNovaLenda" class="button button-ghost" type="button">+ ADICIONAR LENDA</button>
-        </div>
-        <div class="hero-footnote"><span>EXPRESS.JS</span><span>HTML + CSS</span><span>JAVASCRIPT</span><span>API REST</span></div>
+  <main class="container" id="inicio">
+    <section class="apresentacao">
+      <div>
+        <p class="etiqueta">Projeto de Programação Web</p>
+        <h1>Catálogo de Lendas</h1>
+        <p>Confira os personagens de Apex Legends e cadastre sua própria lenda.</p>
       </div>
-      <div class="hero-visual" aria-hidden="true">
-        <div class="hero-coordinate top">A-01 <span>LOCATE // TARGET</span></div>
-        <div class="radar-line radar-line-1"></div>
-        <div class="radar-line radar-line-2"></div>
-        <div class="radar-circle circle-1"></div>
-        <div class="radar-circle circle-2"></div>
-        <div class="radar-circle circle-3"></div>
-        <div class="hero-triangle"></div>
-        <div class="hero-monogram">A</div>
-        <div class="hero-cross cross-1">+</div>
-        <div class="hero-cross cross-2">+</div>
-        <div class="hero-visual-label">THE ARENA <span>IS WAITING</span></div>
-        <div class="hero-coordinate bottom">SQUAD // 03 <span>READY TO DROP</span></div>
-      </div>
-      <div class="hero-rail">APEX LEGENDS / COMMUNITY DATABASE // 2026</div>
+      <button id="abrirCadastro" class="botao principal" type="button">+ Nova lenda</button>
     </section>
 
-    <section class="metrics section-shell" aria-label="Estatísticas do arquivo">
-      <div class="metric featured"><span class="metric-icon">◈</span><div><small>TOTAL DE LENDAS</small><strong id="totalLendas">—</strong></div></div>
-      <div class="metric"><span class="metric-icon">✦</span><div><small>ASSALTO</small><strong id="totalAssalto">—</strong></div></div>
-      <div class="metric"><span class="metric-icon">⟡</span><div><small>COMBATE</small><strong id="totalCombate">—</strong></div></div>
-      <div class="metric"><span class="metric-icon">◎</span><div><small>BATEDOR</small><strong id="totalBatedor">—</strong></div></div>
-      <div class="metric"><span class="metric-icon">▣</span><div><small>CONTROLE</small><strong id="totalControle">—</strong></div></div>
-      <div class="metric"><span class="metric-icon">✚</span><div><small>SUPORTE</small><strong id="totalSuporte">—</strong></div></div>
-    </section>
-
-    <section id="lendas" class="catalog section-shell">
-      <div class="section-heading">
-        <div>
-          <p class="section-kicker">// DATABASE / 001</p>
-          <h2>ARQUIVO <span>DE LENDAS</span></h2>
-          <p>Encontre, filtre, favorite e edite personagens diretamente pela API.</p>
-        </div>
-        <button class="button button-primary button-create" id="abrirCadastro" type="button">+ NOVA LENDA</button>
+    <section id="areaFormulario" class="painel formulario-area" hidden>
+      <div class="titulo-linha">
+        <h2 id="tituloFormulario">Cadastrar lenda</h2>
+        <button id="cancelarCadastro" class="botao secundario" type="button">Fechar</button>
       </div>
 
-      <div class="catalog-tools">
-        <label class="search-box">
-          <span aria-hidden="true">⌕</span>
-          <input type="search" id="busca" placeholder="BUSCAR POR NOME OU DESCRIÇÃO..." autocomplete="off">
-          <span class="search-shortcut">SEARCH /</span>
+      <form id="formLenda">
+        <div class="campos">
+          <label>Nome
+            <input name="nome" type="text" maxlength="70" required placeholder="Ex.: Pathfinder">
+          </label>
+          <label>Título
+            <input name="titulo" type="text" maxlength="100" required placeholder="Ex.: Batedor Avançado">
+          </label>
+          <label>Classe
+            <select name="classe" required>
+              <option value="">Selecione uma classe</option>
+              <option>Assalto</option>
+              <option>Combate</option>
+              <option>Batedor</option>
+              <option>Controle</option>
+              <option>Suporte</option>
+            </select>
+          </label>
+          <label>Cor do card
+            <input name="cor" type="color" value="#df454b">
+          </label>
+          <label>Habilidade tática
+            <input name="tatica" type="text" maxlength="100" required>
+          </label>
+          <label>Habilidade suprema
+            <input name="suprema" type="text" maxlength="100" required>
+          </label>
+          <label class="largura-total">Descrição
+            <textarea name="descricao" rows="3" maxlength="240" required placeholder="Descreva a lenda em poucas palavras"></textarea>
+          </label>
+        </div>
+        <p id="erroFormulario" class="erro" role="alert" aria-live="polite"></p>
+        <div class="botoes-formulario">
+          <button id="salvarLenda" class="botao principal" type="submit">Cadastrar</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="lendas" class="catalogo">
+      <div class="titulo-linha">
+        <h2>Lendas cadastradas</h2>
+        <span id="contadorResultados">Carregando...</span>
+      </div>
+      <div class="filtros">
+        <label class="campo-filtro">Buscar
+          <input id="busca" type="search" placeholder="Nome ou descrição" autocomplete="off">
         </label>
-        <button type="button" id="filtroFavoritas" class="favorites-filter" aria-pressed="false"><span aria-hidden="true">☆</span> SÓ FAVORITAS</button>
+        <label class="campo-filtro">Classe
+          <select id="filtroClasse">
+            <option value="">Todas as classes</option>
+            <option>Assalto</option>
+            <option>Combate</option>
+            <option>Batedor</option>
+            <option>Controle</option>
+            <option>Suporte</option>
+          </select>
+        </label>
+        <label class="filtro-favoritas"><input id="soFavoritas" type="checkbox"> Só favoritas</label>
       </div>
-
-      <div class="filters-row">
-        <div id="filtrosClasse" class="class-filters" aria-label="Filtrar por classe">
-          <button class="filter-chip selected" data-classe="Todas" aria-pressed="true">TODAS</button>
-          <button class="filter-chip" data-classe="Assalto" aria-pressed="false">ASSALTO</button>
-          <button class="filter-chip" data-classe="Combate" aria-pressed="false">COMBATE</button>
-          <button class="filter-chip" data-classe="Batedor" aria-pressed="false">BATEDOR</button>
-          <button class="filter-chip" data-classe="Controle" aria-pressed="false">CONTROLE</button>
-          <button class="filter-chip" data-classe="Suporte" aria-pressed="false">SUPORTE</button>
-        </div>
-        <span id="contadorResultados" class="result-count">CARREGANDO REGISTROS...</span>
-      </div>
-
-      <div id="gridLendas" class="legends-grid" aria-live="polite">
-        <div class="loading-state">CARREGANDO ARQUIVO DE LENDAS<span class="loading-dots">...</span></div>
-      </div>
-    </section>
-
-    <section id="projeto" class="about section-shell">
-      <div class="about-intro"><small>02 / SOBRE O SISTEMA</small><h2>DO CÓDIGO<br>À <em>ARENA.</em></h2></div>
-      <div class="about-copy"><p>Este é um projeto educacional, sem vínculo oficial com a Electronic Arts. O navegador usa <strong>fetch()</strong> para enviar requisições à API, construída com <strong>Express.js</strong>.</p><p>As rotas permitem listar, consultar, cadastrar, editar, excluir e favoritar lendas. Os dados são gravados no arquivo <code>data/lendas.json</code>.</p><div class="about-tags"><span>GET</span><span>POST</span><span>PUT</span><span>PATCH</span><span>DELETE</span></div></div>
+      <p id="mensagem" class="mensagem" role="status" aria-live="polite" hidden></p>
+      <div id="gridLendas" class="cards" aria-live="polite">Carregando lendas...</div>
     </section>
   </main>
 
-  <footer class="site-footer section-shell"><span>LEGEND ARCHIVE<span class="footer-dot">.</span></span><small>PROJETO ACADÊMICO • NÃO OFICIAL • 2026</small><a href="#inicio">VOLTAR AO TOPO ↑</a></footer>
-
-  <dialog id="modalLenda" class="custom-dialog" aria-labelledby="tituloModal">
-    <div class="dialog-head"><div><small>// GERENCIAR REGISTRO</small><h2 id="tituloModal">NOVA LENDA</h2></div><button type="button" class="dialog-close" id="fecharModal" aria-label="Fechar">×</button></div>
-    <form id="formLenda">
-      <div class="form-grid">
-        <label>NOME DA LENDA <input name="nome" required maxlength="70" placeholder="Ex.: Pathfinder"></label>
-        <label>TÍTULO / APELIDO <input name="titulo" required maxlength="100" placeholder="Ex.: Batedor Avançado"></label>
-        <label>CLASSE
-          <select name="classe" required>
-            <option value="">SELECIONE UMA CLASSE</option><option>Assalto</option><option>Combate</option><option>Batedor</option><option>Controle</option><option>Suporte</option>
-          </select>
-        </label>
-        <label>COR DO CARTÃO <input name="cor" type="color" value="#e94b5f"></label>
-        <label>HABILIDADE TÁTICA <input name="tatica" required maxlength="100" placeholder="Nome da habilidade tática"></label>
-        <label>HABILIDADE SUPREMA <input name="suprema" required maxlength="100" placeholder="Nome da habilidade suprema"></label>
-        <label class="full-width">DESCRIÇÃO <textarea name="descricao" required maxlength="240" rows="3" placeholder="Conte um pouco sobre o estilo de jogo... "></textarea></label>
-      </div>
-      <p class="form-feedback" id="erroFormulario" role="alert"></p>
-      <div class="dialog-actions"><button type="button" class="button button-ghost" id="cancelarModal">CANCELAR</button><button type="submit" class="button button-primary" id="salvarLenda">SALVAR LENDA ↗</button></div>
-    </form>
-  </dialog>
-
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <footer class="rodape">Projeto acadêmico não oficial. Apex Legends pertence à EA e Respawn.</footer>
 </body>
 </html>
