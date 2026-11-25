@@ -107,3 +107,17 @@ test('DELETE /api/lendas/:id apaga um registro', async () => {
   const consulta = await fetch(`${endereco}/api/lendas/${idCriado}`);
   assert.equal(consulta.status, 404);
 });
+
+test('POST aceita apenas nome e classe e gera os demais campos', async () => {
+  const resposta = await fetch(`${endereco}/api/lendas`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nome: 'Nova Fera', classe: 'Suporte' })
+  });
+  assert.equal(resposta.status, 201);
+  const criada = await resposta.json();
+  assert.equal(criada.cor, '#84d6d1');
+  assert.equal(criada.titulo, 'Nova lenda');
+  assert.equal(criada.tatica, 'Não informada');
+  assert.ok(JSON.parse(fs.readFileSync(arquivoTemporario, 'utf8')).some(lenda => lenda.id === criada.id));
+});

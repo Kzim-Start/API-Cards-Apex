@@ -1,4 +1,4 @@
-// API REST do catálogo. Os registros ficam salvos em um arquivo JSON.
+// Back-end do projeto. O Express recebe as requisições e devolve JSON.
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -7,15 +7,17 @@ const app = express();
 const PORTA = process.env.PORT || 3000;
 const ARQUIVO = process.env.DATA_FILE || path.join(__dirname, 'data', 'lendas.json');
 const CLASSES = ['Assalto', 'Combate', 'Batedor', 'Controle', 'Suporte'];
+
+// Carrega os registros uma vez ao iniciar o servidor.
 let lendas = JSON.parse(fs.readFileSync(ARQUIVO, 'utf8'));
 
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json()); // Permite receber JSON no corpo do POST e do PUT.
+app.use(express.static(path.join(__dirname, 'public'))); // Entrega HTML, CSS e JS.
 
+// Salva os dados no disco. Eles continuam lá mesmo após reiniciar o Node.js.
 function salvar(dados) {
-  // Como é um JSON pequeno, a gravação síncrona evita dois cadastros ao mesmo tempo
-  // receberem o mesmo ID ou sobrescreverem as alterações um do outro.
-  fs.writeFileSync(ARQUIVO, JSON.stringify(dados, null, 2) + '\n');
+  fs.writeFileSync(ARQUIVO + '.tmp', JSON.stringify(dados, null, 2) + '\n');
+  fs.renameSync(ARQUIVO + '.tmp', ARQUIVO);
   lendas = dados;
 }
 
@@ -23,110 +25,142 @@ function encontrar(id) {
   return lendas.find((lenda) => lenda.id === Number(id));
 }
 
+// Validação básica para evitar registros incompletos.
 function validar(dados) {
-  if (!dados || typeof dados !== 'object' || Array.isArray(dados)) {
-    return 'Envie os dados da lenda em JSON.';
+  const limites = { nome: 70, titulo: 100, descricao: 240, tatica: 100, suprema: 100 };
+  if (typeof dados.nome !== 'string' || !dados.nome.trim()) return 'Informe o nome da lenda.';
+  for (const [campo, limite] of Object.entries(limites)) {
+    if (dados[campo] !== undefined && (typeof dados[campo] !== 'string' || dados[campo].trim().length > limite)) {
+      return `O campo ${campo} deve ter até ${limite} caracteres.`;
+    }
   }
 
-  const limites = { nome: 70, titulo: 100, classe: 100, tatica: 100, suprema: 100, descricao: 240 };
-  for (const [campo, limite] of Object.entries(limites)) {
-    if (typeof dados[campo] !== 'string' || !dados[campo].trim()) {
-      return `Preencha o campo ${campo}.`;
-    }
-    if (dados[campo].trim().length > limite) {
-      return `O campo ${campo} aceita até ${limite} caracteres.`;
-    }
+  if (!CLASSES.includes(dados.classe)) {
+    return 'Classe inválida. Escolha uma das cinco classes disponíveis.';
   }
-  if (!CLASSES.includes(dados.classe.trim())) return 'Escolha uma classe válida.';
-  if (dados.cor !== undefined && (typeof dados.cor !== 'string' || !/^#[0-9a-f]{6}$/i.test(dados.cor))) {
-    return 'Escolha uma cor válida.';
+
+  if (dados.cor && (typeof dados.cor !== 'string' || !/^#[0-9a-f]{6}$/i.test(dados.cor))) {
+    return 'A cor deve estar no formato hexadecimal, como #ff4655.';
   }
+
   return null;
 }
 
-function limpar(dados) {
+function limparDados(dados) {
+  const cores = { Assalto: '#f19e65', Combate: '#e56f70', Batedor: '#65d3b0', Controle: '#b78fe5', Suporte: '#84d6d1' };
   return {
     nome: dados.nome.trim(),
-    titulo: dados.titulo.trim(),
-    classe: dados.classe.trim(),
-    descricao: dados.descricao.trim(),
-    tatica: dados.tatica.trim(),
-    suprema: dados.suprema.trim(),
-    cor: dados.cor || '#df454b'
+    titulo: (dados.titulo || '').trim() || 'Nova lenda',
+    classe: dados.classe,
+    descricao: (dados.descricao || '').trim() || 'Descrição não informada.',
+    tatica: (dados.tatica || '').trim() || 'Não informada',
+    suprema: (dados.suprema || '').trim() || 'Não informada',
+    cor: dados.cor || cores[dados.classe]
   };
 }
 
-function nomeExistente(nome, ignorarId = null) {
-  return lendas.some((item) =>
-    item.id !== ignorarId && item.nome.trim().toLowerCase() === nome.trim().toLowerCase()
-  );
-}
-
+// GET = consultar todos os personagens (aceita busca e filtro por classe).
 app.get('/api/lendas', (req, res) => {
-  const busca = String(req.query.busca || '').trim().toLowerCase();
+  const busca = String(req.query.busca || '').toLowerCase().trim();
   const classe = String(req.query.classe || '');
-  const favoritas = req.query.favoritas === 'true';
+  const favoritas = String(req.query.favoritas || '') === 'true';
 
-  const resultado = lendas.filter((lenda) => {
-    const combinaBusca = !busca || `${lenda.nome} ${lenda.titulo} ${lenda.descricao}`.toLowerCase().includes(busca);
-    return combinaBusca && (!classe || lenda.classe === classe) && (!favoritas || lenda.favorita);
-  });
+  let resultado = lendas;
+
+  if (busca) {
+    resultado = resultado.filter((lenda) =>
+      `${lenda.nome} ${lenda.titulo} ${lenda.descricao}`.toLowerCase().includes(busca)
+    );
+  }
+
+  if (classe) {
+    resultado = resultado.filter((lenda) => lenda.classe === classe);
+  }
+
+  if (favoritas) {
+    resultado = resultado.filter((lenda) => lenda.favorita);
+  }
+
   res.json(resultado);
 });
 
+// GET = consultar apenas um personagem pelo seu ID.
 app.get('/api/lendas/:id', (req, res) => {
   const lenda = encontrar(req.params.id);
   if (!lenda) return res.status(404).json({ erro: 'Lenda não encontrada.' });
   res.json(lenda);
 });
 
-app.post('/api/lendas', (req, res, next) => {
+// POST = cadastrar uma nova lenda.
+app.post('/api/lendas', async (req, res, next) => {
   try {
-    const erro = validar(req.body);
+    const erro = validar(req.body || {});
     if (erro) return res.status(400).json({ erro });
-    if (nomeExistente(req.body.nome)) {
+
+    const nome = req.body.nome.trim().toLowerCase();
+    if (lendas.some((item) => item.nome.toLowerCase() === nome)) {
       return res.status(409).json({ erro: 'Já existe uma lenda com esse nome.' });
     }
+
     const id = Math.max(0, ...lendas.map((lenda) => lenda.id)) + 1;
-    const nova = { id, ...limpar(req.body), favorita: false };
-    salvar([...lendas, nova]);
-    res.status(201).json(nova);
-  } catch (erro) { next(erro); }
+    const novaLenda = { id, ...limparDados(req.body), favorita: false };
+    await salvar([...lendas, novaLenda]);
+    res.status(201).json(novaLenda);
+  } catch (erro) {
+    next(erro);
+  }
 });
 
-app.put('/api/lendas/:id', (req, res, next) => {
+// PUT = atualizar um personagem já cadastrado.
+app.put('/api/lendas/:id', async (req, res, next) => {
   try {
     const atual = encontrar(req.params.id);
     if (!atual) return res.status(404).json({ erro: 'Lenda não encontrada.' });
-    const erro = validar(req.body);
+
+    const erro = validar(req.body || {});
     if (erro) return res.status(400).json({ erro });
-    if (nomeExistente(req.body.nome, atual.id)) {
+
+    const nome = req.body.nome.trim().toLowerCase();
+    if (lendas.some((item) => item.id !== atual.id && item.nome.toLowerCase() === nome)) {
       return res.status(409).json({ erro: 'Já existe uma lenda com esse nome.' });
     }
-    const alterada = { ...atual, ...limpar(req.body) };
-    salvar(lendas.map((item) => item.id === atual.id ? alterada : item));
-    res.json(alterada);
-  } catch (erro) { next(erro); }
+
+    const atualizada = { ...atual, ...limparDados(req.body) };
+    await salvar(lendas.map((item) => item.id === atual.id ? atualizada : item));
+    res.json(atualizada);
+  } catch (erro) {
+    next(erro);
+  }
 });
 
-app.patch('/api/lendas/:id/favorita', (req, res, next) => {
+// PATCH = altera somente o favorito, sem editar o resto do personagem.
+app.patch('/api/lendas/:id/favorita', async (req, res, next) => {
   try {
     const atual = encontrar(req.params.id);
     if (!atual) return res.status(404).json({ erro: 'Lenda não encontrada.' });
-    const alterada = { ...atual, favorita: !atual.favorita };
-    salvar(lendas.map((item) => item.id === atual.id ? alterada : item));
-    res.json(alterada);
-  } catch (erro) { next(erro); }
+
+    const atualizada = { ...atual, favorita: !atual.favorita };
+    await salvar(lendas.map((item) => item.id === atual.id ? atualizada : item));
+    res.json(atualizada);
+  } catch (erro) {
+    next(erro);
+  }
 });
 
-app.delete('/api/lendas/:id', (req, res, next) => {
+// DELETE = excluir um personagem pelo ID.
+app.delete('/api/lendas/:id', async (req, res, next) => {
   try {
-    if (!encontrar(req.params.id)) return res.status(404).json({ erro: 'Lenda não encontrada.' });
-    salvar(lendas.filter((lenda) => lenda.id !== Number(req.params.id)));
+    const atual = encontrar(req.params.id);
+    if (!atual) return res.status(404).json({ erro: 'Lenda não encontrada.' });
+
+    await salvar(lendas.filter((item) => item.id !== atual.id));
     res.status(204).end();
-  } catch (erro) { next(erro); }
+  } catch (erro) {
+    next(erro);
+  }
 });
 
+// Uma rota simples de status para mostrar que o servidor está ligado.
 app.get('/api/status', (req, res) => {
   res.json({ mensagem: 'API Apex online', total: lendas.length, classes: CLASSES });
 });
@@ -136,10 +170,16 @@ app.use((erro, req, res, next) => {
     return res.status(400).json({ erro: 'JSON inválido.' });
   }
   console.error(erro);
-  res.status(500).json({ erro: 'Não foi possível salvar. Verifique o servidor.' });
+  res.status(500).json({ erro: 'Erro interno no servidor.' });
 });
 
+// O teste importa o app sem abrir uma porta; a execução normal abre a porta 3000.
 if (require.main === module) {
-  app.listen(PORTA, () => console.log(`Servidor aberto em http://localhost:${PORTA}`));
+  app.listen(PORTA, () => {
+    console.log(`\n  APEX // LEGEND ARCHIVE`);
+    console.log(`  Site: http://localhost:${PORTA}`);
+    console.log(`  API:  http://localhost:${PORTA}/api/lendas\n`);
+  });
 }
+
 module.exports = app;
