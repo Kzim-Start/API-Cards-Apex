@@ -4,6 +4,10 @@ Catálogo de personagens inspirado em **Apex Legends**, feito para demonstrar um
 
 > Projeto educacional não oficial, sem vínculo com a Electronic Arts ou a Respawn Entertainment.
 
+## Tela inicial
+
+![Tela inicial do Legend Archive](docs/tela-inicial.webp)
+
 ## Como executar
 
 Você precisa ter o **Node.js 18 ou mais recente** instalado.
